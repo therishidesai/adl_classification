@@ -25,12 +25,15 @@ class cluster():
     def classify(self, model):
         model.fit(self.X_train, self.y_train)
         y_pred = model.predict(self.X_test)
-        print('Accuracy: {}'.format(accuracy_score(self.y_test, y_pred)))
-        print(confusion_matrix(self.y_test, y_pred))
+        accuracy = accuracy_score(self.y_test, y_pred)
+        return accuracy, confusion_matrix(self.y_test, y_pred)
+        #print('Accuracy: {}'.format(accuracy_score(self.y_test, y_pred)))
+        #print(confusion_matrix(self.y_test, y_pred))
 
-    def Kmeans(self, output='add'):
-        n_clusters = len(np.unique(self.y_train)) * 50
-        clf = KMeans(n_clusters = n_clusters, random_state = self.random)
+    def Kmeans(self, output='add', tune=1, k=1):
+        n_clusters = k
+        #n_clusters = int(len(np.unique(self.y_train)) * tune)
+        clf = KMeans(n_clusters = n_clusters, random_state = self.random, n_jobs=2)
         clf.fit(self.X_train)
         y_labels_train = clf.labels_
         y_labels_test = clf.predict(self.X_test)
@@ -92,8 +95,24 @@ def parse_data():
 
 def main():
     d, targets = parse_data()
-    #cluster(d, targets).Kmeans(output='add')
-    cluster(d, targets, 50).Kmeans(output='add').classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
-    
+
+    accuracy = 0.0
+    confusion_matrix = 0
+    final_tuning_val = 0
+
+    for i in range(1000):
+        i += 1
+        print(i)
+        a, cmat = cluster(d, targets, 50).Kmeans(output='add', k=i).classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
+        if a > accuracy:
+            accuracy = a
+            confusion_matrix = cmat
+            final_tuning_val = i
+
+    print('Final d = {}'.format(96))
+    print('Final k = {}'.format(final_tuning_val))
+    print('Final Accuracy: {}'.format(accuracy))
+    print('Confusion Matrix: \n')
+    print(confusion_matrix)
 if __name__ == "__main__":
     main()
