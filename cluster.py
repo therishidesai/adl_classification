@@ -5,28 +5,32 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.cluster import KMeans
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
 import os
 
 class cluster():
-    def _load_data(self, sklearn_load_ds, targets):
+    def _load_data(self, sklearn_load_ds, targets, random):
         data = sklearn_load_ds
         X = pd.DataFrame(data)
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, targets, test_size=0.3)
+        self.X_data = sklearn_load_ds
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, targets, test_size=0.3, random_state = random)
+        self.random = random
         
         
-    def __init__(self, sklearn_load_ds, targets):
-        self._load_data(sklearn_load_ds, targets)
+    def __init__(self, sklearn_load_ds, targets, random):
+        self._load_data(sklearn_load_ds, targets, random)
         
-    def classify(self, model=LogisticRegression()):
+    def classify(self, model):
         model.fit(self.X_train, self.y_train)
         y_pred = model.predict(self.X_test)
         print('Accuracy: {}'.format(accuracy_score(self.y_test, y_pred)))
-
+        print(confusion_matrix(self.y_test, y_pred))
 
     def Kmeans(self, output='add'):
-        n_clusters = len(np.unique(self.y_train))
-        clf = KMeans(n_clusters = n_clusters, random_state=42)
+        n_clusters = len(np.unique(self.y_train)) * 50
+        clf = KMeans(n_clusters = n_clusters, random_state = self.random)
         clf.fit(self.X_train)
         y_labels_train = clf.labels_
         y_labels_test = clf.predict(self.X_test)
@@ -40,6 +44,7 @@ class cluster():
             raise ValueError('output should be either add or replace')
         return self
 
+#32x3 data setup
 def parse_data():
     frames = []
     #files = {"Brush_teeth":[]}
@@ -55,8 +60,19 @@ def parse_data():
         frames = []
         for f in v:
             fname = dir_name + "/" + f
-            frames.append(pd.read_table(fname, sep='\s+').values)
-        dfs[k] = np.concatenate(frames, axis=0)
+            vals = pd.read_table(fname, sep='\s+').values
+            rows = vals.shape[0]
+            chunks = int(rows/32)
+            chunk = []
+            for i in range(chunks):
+                for j in range(32):
+                    index = i + j
+                    val = vals[index]
+                    for x in range(3):
+                        chunk.append(val[x])
+                frames.append(chunk)
+                chunk = []
+        dfs[k] = np.matrix(frames)
         sizes.append(dfs[k].shape[0])
         
     matrices = []
@@ -73,17 +89,11 @@ def parse_data():
         
     return data, target
     
+
 def main():
     d, targets = parse_data()
-    #print(d)
-    print(d.shape)
-    print(len(targets))
-    #cluster(d, targets).classify()
-    cluster(d, targets).Kmeans(output='replace').classify(model=SVC())
-    #cluster(d, targets)
-    #print(load_digits())
-    print(len(load_digits().data[0]))
-    #print(len(load_digits().target))
-    print(load_digits().data.shape)
+    #cluster(d, targets).Kmeans(output='add')
+    cluster(d, targets, 50).Kmeans(output='add').classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
+    
 if __name__ == "__main__":
     main()
