@@ -93,7 +93,7 @@ def main():
     confusion_matrix = 0
     final_tuning_val = 0
     k_const = 14
-    for i in range(75):
+    for i in range(50):
         i += 1
         print(i)
         #a, cmat = cluster(d, targets, 50).Kmeans(output='r', tune=i, k=k_const).classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
