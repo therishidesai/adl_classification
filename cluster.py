@@ -11,16 +11,12 @@ import matplotlib.pyplot as plt
 import os
 
 class cluster():
-    def _load_data(self, sklearn_load_ds, targets, random):
+    def __init__(self, sklearn_load_ds, targets, random):
         data = sklearn_load_ds
         X = pd.DataFrame(data)
         self.X_data = sklearn_load_ds
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, targets, test_size=0.3, random_state = random)
         self.random = random
-        
-        
-    def __init__(self, sklearn_load_ds, targets, random):
-        self._load_data(sklearn_load_ds, targets, random)
         
     def classify(self, model):
         model.fit(self.X_train, self.y_train)
@@ -31,20 +27,17 @@ class cluster():
         #print(confusion_matrix(self.y_test, y_pred))
 
     def Kmeans(self, output='add', tune=1, k=1):
-        n_clusters = k
-        #n_clusters = int(len(np.unique(self.y_train)) * tune)
+        n_clusters = int(k*tune)
         clf = KMeans(n_clusters = n_clusters, random_state = self.random, n_jobs=2)
         clf.fit(self.X_train)
         y_labels_train = clf.labels_
         y_labels_test = clf.predict(self.X_test)
-        if output == 'add':
+        if output == 'a':
             self.X_train['km_clust'] = y_labels_train
             self.X_test['km_clust'] = y_labels_test
-        elif output == 'replace':
+        elif output == 'r':
             self.X_train = y_labels_train[:, np.newaxis]
             self.X_test = y_labels_test[:, np.newaxis]
-        else:
-            raise ValueError('output should be either add or replace')
         return self
 
 #32x3 data setup
@@ -99,18 +92,19 @@ def main():
     accuracy = 0.0
     confusion_matrix = 0
     final_tuning_val = 0
-
-    for i in range(1000):
+    k_const = 14
+    for i in range(75):
         i += 1
         print(i)
-        a, cmat = cluster(d, targets, 50).Kmeans(output='add', k=i).classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
+        #a, cmat = cluster(d, targets, 50).Kmeans(output='r', tune=i, k=k_const).classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
+        a, cmat = cluster(d, targets, 50).Kmeans(output='a', tune=i, k=k_const).classify(model = RandomForestClassifier(n_estimators=100, max_depth=50, random_state=50))
         if a > accuracy:
             accuracy = a
             confusion_matrix = cmat
             final_tuning_val = i
 
     print('Final d = {}'.format(96))
-    print('Final k = {}'.format(final_tuning_val))
+    print('Final k = {}'.format(k_const*final_tuning_val))
     print('Final Accuracy: {}'.format(accuracy))
     print('Confusion Matrix: \n')
     print(confusion_matrix)
